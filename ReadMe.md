@@ -4,7 +4,7 @@
 
 **Name:** Sunil Varma Tenali  
 **Role:** Automation & QA Developer Assessment
-
+ [**Loom Video Link:**](https://drive.google.com/file/d/1cdivaDtfsf0nsXZTgGlyANc8kJO4VpKW/view?usp=sharing)
 ## Submission Overview
 
 This repository contains my completed work for the Automation & QA Developer take-home assessment.
@@ -261,7 +261,7 @@ This ensures downtime, invalid responses, or network-level failures are visible 
 
 A Loom video walkthrough is included with the submission.
 
-**Loom Video Link:** [Link for Video](https://drive.google.com/file/d/1cdivaDtfsf0nsXZTgGlyANc8kJO4VpKW/view?usp=sharing)
+ [**Loom Video Link:**](https://drive.google.com/file/d/1cdivaDtfsf0nsXZTgGlyANc8kJO4VpKW/view?usp=sharing)
 
 In the video, I explain:
 
