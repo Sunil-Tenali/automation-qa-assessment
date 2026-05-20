@@ -1,0 +1,511 @@
+{
+  "name": "My workflow 2",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        96
+      ],
+      "id": "37b92ed7-82d5-42e2-946f-4edde2cd6576",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "const repos = $json.items || [];\n\nconst topRepos = repos.slice(0, 5).map(repo => ({\n  name: repo.name,\n  full_name: repo.full_name,\n  owner: repo.owner?.login,\n  url: repo.html_url,\n  description: repo.description,\n  stars: repo.stargazers_count,\n  forks: repo.forks_count,\n  language: repo.language,\n  updated_at: repo.updated_at\n}));\n\nreturn [\n  {\n    json: {\n      topRepos,\n      topRepo: topRepos[0],\n      totalReturned: topRepos.length\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        0
+      ],
+      "id": "8dd8cfb5-8a91-4167-b88d-fdc36c9421fb",
+      "name": "Prepare Top 5 Repos"
+    },
+    {
+      "parameters": {
+        "url": "https://api.github.com/search/repositories?q=topic:automation&sort=stars&order=desc&per_page=10",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "User-Agent",
+              "value": "n8n-qa-assessment"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        224,
+        96
+      ],
+      "id": "a1147e32-8bf2-4eea-92f0-2705bb445f06",
+      "name": "Search GitHub Repos",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/repos/{{$json.topRepo.full_name}}/readme",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "User-Agent",
+              "value": "n8n-qa-assessment"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        896,
+        0
+      ],
+      "id": "2d2cf961-9a7b-4f98-96ac-f3e05462fe65",
+      "name": "Fetch Top Repo README",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $node[\"Prepare Top 5 Repos\"].json;\nconst topRepos = data.topRepos || [];\nconst topRepo = data.topRepo || {};\n\nconst isHighInterest = topRepo.stars > 1000;\n\nconst repoLines = topRepos.map((repo, index) => {\n  return `${index + 1}. ${repo.full_name}\n   Stars: ${repo.stars}\n   Forks: ${repo.forks}\n   Language: ${repo.language || \"Not specified\"}\n   URL: ${repo.url}\n   Description: ${repo.description || \"No description available.\"}`;\n}).join(\"\\n\\n\");\n\nconst message = `\nGitHub Automation Digest\n\nStatus: ${isHighInterest ? \"High-interest repository found\" : \"Normal digest\"}\n\nTop 5 automation repositories:\n\n${repoLines}\n\nTop repo selected for enrichment:\n${topRepo.full_name}\n\nReason for branch:\nTop repo has ${topRepo.stars} stars. Threshold is 1000.\n`;\n\nreturn [\n  {\n    json: {\n      message,\n      status: isHighInterest ? \"high_interest\" : \"normal\",\n      topRepo: topRepo.full_name,\n      stars: topRepo.stars\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1568,
+        -96
+      ],
+      "id": "4cbab5a8-d62a-4e23-b542-5186a3700b60",
+      "name": "Build Digest Message"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1M1SNIkxjXncv2vL-oyL5jMD9-tynWFQoiKe79y1naxg",
+          "mode": "list",
+          "cachedResultName": "Task2 GitHub Digest",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1M1SNIkxjXncv2vL-oyL5jMD9-tynWFQoiKe79y1naxg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1M1SNIkxjXncv2vL-oyL5jMD9-tynWFQoiKe79y1naxg/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "timestamp": "={{$now}}",
+            "status ": "={{$json.status}}",
+            "top_repo ": "={{$json.topRepo}}",
+            "stars ": "={{$json.stars}}",
+            "message": "={{$json.message}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status ",
+              "displayName": "status ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "top_repo ",
+              "displayName": "top_repo ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "stars ",
+              "displayName": "stars ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "topRepo",
+              "displayName": "topRepo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "stars",
+              "displayName": "stars",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1792,
+        120
+      ],
+      "id": "4c5bff47-3f63-4d47-b13c-64ef95cba1a1",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "t08OMobprWCJWeBu",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "02f09bf2-7fb8-4faa-947b-32f95035a68e",
+              "leftValue": "={{$json.error}}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        448,
+        264
+      ],
+      "id": "6441b70f-c806-4909-bf6e-0d5c04c53f79",
+      "name": "Check GitHub Search Error"
+    },
+    {
+      "parameters": {
+        "jsCode": "const errorMessage =\n  $json.error?.message ||\n  $json.message ||\n  \"GitHub search API failed or returned an unexpected error.\";\n\nreturn [\n  {\n    json: {\n      timestamp: new Date().toISOString(),\n      status: \"error\",\n      topRepo: \"N/A\",\n      stars: \"N/A\",\n      message: `GitHub Automation Digest failed during the first API request.\n\nError:\n${errorMessage}\n\nAction:\nCheck the Search GitHub Repos HTTP Request node, API URL, network status, or GitHub rate limit.`\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1568,
+        312
+      ],
+      "id": "88dc9e62-9a53-4015-8fef-35e27678c7c1",
+      "name": "Build Search Error Message"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d89d4c63-434a-4069-8fc9-15bea6fb0251",
+              "leftValue": "={{$json.error}}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1120,
+        72
+      ],
+      "id": "3a28921b-a54d-4570-b7a8-3478defbdf97",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c90c99f6-6e5b-4860-b812-b395f37702fb",
+              "leftValue": "={{$node[\"Prepare Top 5 Repos\"].json[\"topRepo\"][\"stars\"]}}",
+              "rightValue": 1000,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1344,
+        -96
+      ],
+      "id": "7144f210-6018-4bfd-8ba0-55e976fe07ef",
+      "name": "Check Star Threshold"
+    },
+    {
+      "parameters": {
+        "jsCode": "const errorMessage =\n  $json.error?.message ||\n  $json.message ||\n  \"GitHub README API failed or returned an unexpected error.\";\n\nconst original = $node[\"Prepare Top 5 Repos\"].json;\nconst topRepo = original.topRepo || {};\n\nreturn [\n  {\n    json: {\n      timestamp: new Date().toISOString(),\n      status: \"error\",\n      topRepo: topRepo.full_name || \"N/A\",\n      stars: topRepo.stars || \"N/A\",\n      message: `GitHub Automation Digest failed during the second API request.\n\nTop repo:\n${topRepo.full_name || \"N/A\"}\n\nError:\n${errorMessage}\n\nAction:\nCheck the Fetch Top Repo README node. The repository may not have a README, the API may be rate-limited, or the endpoint may be unavailable.`\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1568,
+        120
+      ],
+      "id": "31e391b6-4a65-495d-b280-66b8283d1493",
+      "name": "Build README Error Message"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Search GitHub Repos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Top 5 Repos": {
+      "main": [
+        [
+          {
+            "node": "Fetch Top Repo README",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search GitHub Repos": {
+      "main": [
+        [
+          {
+            "node": "Prepare Top 5 Repos",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check GitHub Search Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Top Repo README": {
+      "main": [
+        [
+          {
+            "node": "Check Star Threshold",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Digest Message": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check GitHub Search Error": {
+      "main": [
+        [
+          {
+            "node": "Build Search Error Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Top 5 Repos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Search Error Message": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Star Threshold": {
+      "main": [
+        [
+          {
+            "node": "Build Digest Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Build README Error Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check Star Threshold",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build README Error Message": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "108a1e6a-f9ca-4162-bcbd-7b9c57e53f52",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3dd6ed498bc97c4c54c01a7c61a61a0f8a4f439902480d358c04b5c8237b6f93"
+  },
+  "id": "vyXIn0M64z9bwUzD",
+  "tags": []
+}

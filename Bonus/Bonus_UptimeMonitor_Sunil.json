@@ -1,0 +1,276 @@
+{
+  "name": "My workflow 3",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "fc86d429-b142-4910-836d-e7d24a64c6bc",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://month-of-muscle.netlify.app/",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "2ded7579-de12-412f-b3d3-7c86edfa40db",
+      "name": "Ping Web App",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "3c5c8315-3f84-4ba5-b326-9ad61896ff02",
+              "leftValue": "={{$json.statusCode}}",
+              "rightValue": 200,
+              "operator": {
+                "type": "number",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        416,
+        0
+      ],
+      "id": "aa806acb-d57a-40d9-aeff-ac9ae5ad9fe3",
+      "name": "Check App Health"
+    },
+    {
+      "parameters": {
+        "jsCode": "const statusCode = $json.statusCode || \"Unknown\";\n\nreturn [\n  {\n    json: {\n      timestamp: new Date().toISOString(),\n      status: \"down\",\n      url: \"https://demo.realworld.io\",\n      statusCode,\n      message: `ALERT: Web app uptime check failed.\n\nURL: https://demo.realworld.io\nStatus Code: ${statusCode}\nChecked At: ${new Date().toISOString()}\n\nAction:\nThe app did not return HTTP 200. Please check availability, deployment status, or server logs.`\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        624,
+        -96
+      ],
+      "id": "898f49c8-e69d-4356-b849-be568c7294d9",
+      "name": "Build Alert Message"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1M1SNIkxjXncv2vL-oyL5jMD9-tynWFQoiKe79y1naxg",
+          "mode": "list",
+          "cachedResultName": "Task2 GitHub Digest",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1M1SNIkxjXncv2vL-oyL5jMD9-tynWFQoiKe79y1naxg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1139209202,
+          "mode": "list",
+          "cachedResultName": "Bonus uptime monitor",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1M1SNIkxjXncv2vL-oyL5jMD9-tynWFQoiKe79y1naxg/edit#gid=1139209202"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "timestamp": "={{$json.timestamp}}",
+            "status ": "={{$json.status}}",
+            "url": "={{$json.url}}",
+            "status code": "={{$json.statusCode}}",
+            "message": "={{$json.message}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status ",
+              "displayName": "status ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "url",
+              "displayName": "url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status code",
+              "displayName": "status code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        832,
+        -96
+      ],
+      "id": "f4213227-b5a5-4034-98c0-d96bcd01a66a",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "t08OMobprWCJWeBu",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const statusCode = $json.statusCode || 200;\n\nreturn [\n  {\n    json: {\n      timestamp: new Date().toISOString(),\n      status: \"healthy\",\n      url: \"https://demo.realworld.io\",\n      statusCode,\n      message: `Uptime check passed. The web app returned HTTP ${statusCode}.`\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        624,
+        96
+      ],
+      "id": "cc78844e-5d8d-47cd-96d1-c82ac405534f",
+      "name": "Code in JavaScript"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Ping Web App",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ping Web App": {
+      "main": [
+        [
+          {
+            "node": "Check App Health",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check App Health": {
+      "main": [
+        [
+          {
+            "node": "Build Alert Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Alert Message": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "3327f5b4-790e-4298-8f57-3968079973a6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3dd6ed498bc97c4c54c01a7c61a61a0f8a4f439902480d358c04b5c8237b6f93"
+  },
+  "id": "MfGs3l5QVfwNiv57",
+  "tags": []
+}
